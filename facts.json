@@ -57,13 +57,95 @@
     "event": 2
    }
   },
-  "span_still_sat_after30": 35,
-  "span_still_sat_after60": 18,
   "span_first_sat_ge_2200": 17,
   "span_first_sat_eq_1800": 4,
   "span_by_half_le60": {
    "H1": 0.7647058823529411,
    "H2": 0.7391304347826086
+  },
+  "v03": {
+   "event_sat_nights": 74,
+   "saturated_at_first_plus": {
+    "0": {
+     "observable": 74,
+     "saturated": 74
+    },
+    "10": {
+     "observable": 74,
+     "saturated": 30
+    },
+    "20": {
+     "observable": 74,
+     "saturated": 24
+    },
+    "30": {
+     "observable": 72,
+     "saturated": 15
+    },
+    "40": {
+     "observable": 71,
+     "saturated": 11
+    },
+    "50": {
+     "observable": 70,
+     "saturated": 8
+    },
+    "60": {
+     "observable": 69,
+     "saturated": 5
+    },
+    "70": {
+     "observable": 66,
+     "saturated": 4
+    },
+    "80": {
+     "observable": 63,
+     "saturated": 2
+    },
+    "90": {
+     "observable": 63,
+     "saturated": 3
+    },
+    "100": {
+     "observable": 61,
+     "saturated": 3
+    },
+    "110": {
+     "observable": 60,
+     "saturated": 0
+    },
+    "120": {
+     "observable": 57,
+     "saturated": 1
+    }
+   },
+   "last_within60_after_first": {
+    "nights": 56,
+    "of": 74
+   },
+   "last_within60_first_before_2200": {
+    "nights": 39,
+    "of": 57
+   },
+   "first_sat_in_q25_q75": {
+    "nights": 38,
+    "of": 74
+   },
+   "gate_rule_counts": {
+    "n": 82,
+    "hit": 32,
+    "alt_lower": 75,
+    "random_expected": 21.0
+   },
+   "realtime_T2_counts": {
+    "sat_bins": 65,
+    "caught": 45,
+    "non_event_nights": 42,
+    "fired_nights": 25,
+    "non_event_nights_without_sat": 34,
+    "fired_on_nights_without_sat": 18,
+    "fired_nights_recount": 25
+   }
   }
  },
  "records_total": 2411225,
@@ -378,8 +460,8 @@
  },
  "live": {
   "first": "2026-11-21 15:09:15",
-  "last": "2026-11-24 11:25:17",
-  "n": 821,
+  "last": "2026-11-24 12:45:16",
+  "n": 837,
   "nights": {
    "2026-11-21": {
     "max_drop30": 622,

@@ -1,4 +1,10 @@
-"""기획서 2판에 들어가는 수치를 원천에서 직접 계산해 analysis/plan_facts_v02.json 에 쓴다(2026-11-24). 판정이 아니라 기술 통계와 시험 결과 모음.
+"""기획서 4판에 들어가는 수치를 원천에서 직접 계산해 analysis/plan_facts_v03.json 에 쓴다(2026-11-24). 판정이 아니라 기술 통계와 시험 결과 모음.
+
+3판(plan_facts_v02) 대비, 코덱스 감사 1회차 상급 1 반영:
+- 'span'(첫 포화 칸부터 마지막 포화 칸 끝까지 간격)은 그 시점의 포화 상태가 아니다. 이름을 last_within60(마지막 포화 칸이 첫 포화 뒤 60분 안에 끝난 밤)으로 바꿔 함께 둔다.
+- 시점별 포화 상태를 새로 센다: 첫 포화 칸 + k분(k = 0, 10, ..., 120) 칸이 포화인 밤 수와, 그 칸이 관측창(23:50) 안에 있는 밤 수(분모).
+- 22시 이후 첫 포화 밤을 뺀 민감도, 첫 포화 시각 25~75분위 안에 든 밤 수, 출구 추천 시험의 적중 칸 수(분모 포함)를 둔다.
+- '노란불부터 1시간' 같은 권고 기준은 여기서 만들지 않는다(시험하지 않은 기준).
 
 원천: data/trips_2025_v01.parquet(659 2,411,225건 중 형식 해석 2,411,022건), analysis/coverage_v01.json(온전한 날),
 analysis/kcisa675_events_v01.csv(675 공연), 시험 결과 json(exit_after_show_v03, verify_h2_v02, verify_gate_v01),
@@ -71,7 +77,17 @@ for ds in sorted(VALID):
         freq="10min",
     )
     ex = gate10.reindex(w, fill_value=0)[MAIN].sum(axis=1)
+    satflag = (util.reindex(w).fillna(0)[MAIN] >= 0.9).any(
+        axis=1
+    )  # 출차 기록 없는 칸 = 0 = 포화 아님
+    after = {}
+    if len(sat):
+        t0 = sat.index.min()
+        for k in range(0, 130, 10):
+            tk = t0 + pd.Timedelta(minutes=k)
+            after[k] = None if tk > w[-1] else bool(satflag.loc[tk])
     per_day[ds] = {
+        "after": after,
         "event": ds in ev,
         "half": half(ds),
         "sat_min": int(len(sat) * 10),
@@ -180,7 +196,10 @@ _e675 = pd.read_csv(A / "kcisa675_events_v01.csv", encoding="utf-8-sig")
 _g675 = _e675.groupby("name")["audience"].agg(["count", "nunique"])
 _m675 = _g675[_g675["count"] >= 2]
 extras = {
-    "audience_same_all_days": {"multi_day_shows": int(len(_m675)), "same_value": int((_m675["nunique"] == 1).sum())},
+    "audience_same_all_days": {
+        "multi_day_shows": int(len(_m675)),
+        "same_value": int((_m675["nunique"] == 1).sum()),
+    },
     "weekday_split": {
         "event_weekend": _rate([d for d in per_day if per_day[d]["event"] and _wk[d]]),
         "event_weekday": _rate(
@@ -209,8 +228,6 @@ extras = {
         }
         for m in sorted({d[:7] for d in per_day if per_day[d]["half"] == "H2"})
     },
-    "span_still_sat_after30": int(sum(x > 30 for x in span)),
-    "span_still_sat_after60": int(sum(x > 60 for x in span)),
     "span_first_sat_ge_2200": int(sum(t >= "22:00" for t in first_sat)),
     "span_first_sat_eq_1800": int(sum(t == "18:00" for t in first_sat)),
     "span_by_half_le60": {
@@ -226,6 +243,57 @@ extras = {
         for h in ("H1", "H2")
     },
 }
+
+# ---- 2026-11-24 코덱스 감사 1회차 반영(판정 아님, 통과선 없음) ----
+_evsat = {d: v for d, v in per_day.items() if v["event"] and v["sat_min"] > 0}
+after_k = {}
+for k in range(0, 130, 10):
+    obs = [v["after"][k] for v in _evsat.values() if v["after"][k] is not None]
+    after_k[str(k)] = {"observable": len(obs), "saturated": int(sum(obs))}
+_early = {d: v for d, v in _evsat.items() if v["first_sat"] < "22:00"}
+_lo, _hi = first_q["0.25"], first_q["0.75"]
+_h2non = [v for v in per_day.values() if not v["event"] and v["half"] == "H2"]
+extras["v03"] = {
+    "event_sat_nights": len(_evsat),
+    "saturated_at_first_plus": after_k,
+    "last_within60_after_first": {
+        "nights": int(sum(v["span_min"] <= 60 for v in _evsat.values())),
+        "of": len(_evsat),
+    },
+    "last_within60_first_before_2200": {
+        "nights": int(sum(v["span_min"] <= 60 for v in _early.values())),
+        "of": len(_early),
+    },
+    "first_sat_in_q25_q75": {
+        "nights": int(sum(_lo <= m <= _hi for m in fs_min)),
+        "of": len(fs_min),
+    },
+    "gate_rule_counts": {
+        "n": T_GATE["h2_n"],
+        "hit": int(sum(v["hit"] for v in T_GATE["by_gate"].values())),
+        "alt_lower": int(
+            round(T_GATE["alt_lower_than_saturated_rate"] * T_GATE["h2_n"])
+        ),
+        "random_expected": round(
+            T_GATE["random_other_below_0_6_expected"] * T_GATE["h2_n"], 1
+        ),
+    },
+    "realtime_T2_counts": {
+        "sat_bins": T_H2["T2"]["h2_event_sat_bins"],
+        "caught": T_H2["T2"]["caught"],
+        "non_event_nights": T_H2["T2"]["h2_non_event_days"],
+        "fired_nights": T_H2["T2"]["false_nights"],
+        "non_event_nights_without_sat": int(sum(v["sat_min"] == 0 for v in _h2non)),
+        "fired_on_nights_without_sat": int(
+            sum(v["sat_min"] == 0 and v["yellow"] for v in _h2non)
+        ),
+        "fired_nights_recount": int(sum(v["yellow"] for v in _h2non)),
+    },
+}
+assert (
+    extras["v03"]["realtime_T2_counts"]["fired_nights_recount"]
+    == T_H2["T2"]["false_nights"]
+), "per_day yellow 정의가 verify_h2_v02 T2 와 다름"
 
 out = {
     "extras": extras,
@@ -298,7 +366,7 @@ out = {
         "nights": nights,
     },
 }
-(A / "plan_facts_v02.json").write_text(
+(A / "plan_facts_v03.json").write_text(
     json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8"
 )
 print(

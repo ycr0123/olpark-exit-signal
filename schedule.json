@@ -1,78 +1,90 @@
 {
  "source": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoListText?mid=a20301010200",
- "fetched_kst": "2026-11-24 11:1x",
+ "fetched_kst": "2026-11-24 12:5x",
  "events": [
   {
    "title": "최현우 30주년 기념 공연 - LEGACY",
    "start": "2026-11-28",
    "end": "2027-01-03",
-   "venue": "올림픽공원 우리금융아트홀"
+   "venue": "올림픽공원 우리금융아트홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5136"
   },
   {
    "title": "2026 다이나믹 듀오 단독 콘서트 ＂가끔씩 오래 보자＂ - 서울",
    "start": "2026-11-27",
    "end": "2026-11-29",
-   "venue": "올림픽홀"
+   "venue": "올림픽홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5168"
   },
   {
    "title": "[서울] 2026 조용필 ＆ 위대한탄생 콘서트",
    "start": "2026-11-27",
    "end": "2026-11-29",
-   "venue": "KSPO DOME"
+   "venue": "KSPO DOME",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5159"
   },
   {
    "title": "2026-27 로이킴 LIVE TOUR ［R:O:Y］ in SEOUL",
    "start": "2026-11-21",
    "end": "2026-11-22",
-   "venue": "KSPO DOME"
+   "venue": "KSPO DOME",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5158"
   },
   {
    "title": "2026 CRAVITY CONCERT 〈SONOROUS〉 in Seoul",
    "start": "2026-11-14",
    "end": "2026-11-15",
-   "venue": "올림픽홀"
+   "venue": "올림픽홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5167"
   },
   {
    "title": "TOMORROW X TOGETHER WORLD TOUR 〈STEAL THE WIND〉 IN SEOUL",
    "start": "2026-11-13",
    "end": "2026-11-15",
-   "venue": "KSPO DOME"
+   "venue": "KSPO DOME",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5165"
   },
   {
    "title": "2026 박재정 콘서트 - 기록",
    "start": "2026-11-07",
    "end": "2026-11-08",
-   "venue": "올림픽홀"
+   "venue": "올림픽홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5166"
   },
   {
    "title": "코리아발레스타즈 호두까기인형",
    "start": "2026-11-07",
    "end": "2026-11-08",
-   "venue": "올림픽공원 우리금융아트홀"
+   "venue": "올림픽공원 우리금융아트홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5169"
   },
   {
    "title": "EXO PLANET #6 - EXhOrizon [dot] -",
    "start": "2026-11-06",
    "end": "2026-11-08",
-   "venue": "KSPO DOME"
+   "venue": "KSPO DOME",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5157"
   },
   {
    "title": "2026 WOODZ WORLD TOUR Archive. 1 : Completed",
    "start": "2026-10-31",
    "end": "2026-11-01",
-   "venue": "KSPO DOME"
+   "venue": "KSPO DOME",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5164"
   },
   {
    "title": "2026 ONEW CONCERT [ONEW THE LIVE : Q] IN SEOUL",
    "start": "2026-10-30",
    "end": "2026-11-01",
-   "venue": "올림픽홀"
+   "venue": "올림픽홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5156"
   },
   {
    "title": "2026 심규선 단독 콘서트［SANCTUARY］",
    "start": "2026-10-24",
    "end": "2026-11-01",
-   "venue": "올림픽공원 우리금융아트홀"
+   "venue": "올림픽공원 우리금융아트홀",
+   "url": "https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoView.es?mid=a20301010200&evtSeq=5155"
   }
  ]
 }

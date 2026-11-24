@@ -19,8 +19,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: record
         run: |
-          if git fetch -q origin live 2>/dev/null; then git show FETCH_HEAD:recent.json > prev.json || echo '{"samples":[]}' > prev.json; else echo '{"samples":[]}' > prev.json; fi
-          python3 tools/record_recent.py prev.json recent.json
+          # live 브랜치가 있으면 이전 기록을 반드시 읽는다. 못 읽으면 실패로 멈추고 덮어쓰지 않는다.
+          set +e; git ls-remote --exit-code --heads origin live >/dev/null; rc=$?; set -e
+          if [ "$rc" = "0" ]; then
+            git fetch -q origin live
+            git show FETCH_HEAD:recent.json > prev.json
+            python3 tools/record_recent.py prev.json recent.json
+          elif [ "$rc" = "2" ]; then
+            python3 tools/record_recent.py none recent.json --init
+          else
+            echo "ls-remote failed rc=$rc"; exit 1
+          fi
       - name: publish
         run: |
           mkdir out && cp recent.json out/ && cd out
