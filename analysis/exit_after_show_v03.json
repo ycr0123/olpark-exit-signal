@@ -1,0 +1,29 @@
+{
+  "unique_rows": 2411225,
+  "event_days": 92,
+  "non_event_days": 145,
+  "train_n": 66,
+  "test_n": 26,
+  "train_median_delay_min": -120.0,
+  "delay_quartiles_all_event_days": [
+    -300.0,
+    -105.0,
+    -52.5
+  ],
+  "event_peak30_median": 671.0,
+  "non_event_peak30_median": 622,
+  "size_fit": {
+    "slope_per_audience": 0.014742270830729126,
+    "intercept": 501.7536439400525
+  },
+  "time_mae_min": {
+    "A_block_end_plus_delay": 115.76923076923077,
+    "B_constant": 110.0
+  },
+  "size_mae": {
+    "A_audience_line": 82.42766631516498,
+    "B_constant": 64.0
+  },
+  "time_pass": false,
+  "size_pass": false
+}

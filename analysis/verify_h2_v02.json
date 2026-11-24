@@ -1,0 +1,55 @@
+{
+ "cap_h1_p999": {
+  "동2": 90.0,
+  "북2": 89.62400000000343,
+  "남2": 105.0
+ },
+ "theta_h1_non_event_p99_drop10": 157.92999999999984,
+ "T1": {
+  "h1_event_days": 66,
+  "h2_event_days": 26,
+  "slope_per_audience": 0.0631645545346096,
+  "intercept": 1311.404283238204,
+  "const_median": 1844.0,
+  "mae_A_line": 524.3209050804992,
+  "mae_B_const": 455.65384615384613,
+  "pass": false
+ },
+ "T2": {
+  "h2_event_sat_bins": 65,
+  "caught": 45,
+  "recall": 0.6923076923076923,
+  "h2_non_event_days": 42,
+  "false_nights": 25,
+  "false_rate": 0.5952380952380952,
+  "pass": false
+ },
+ "T3": {
+  "n": 65,
+  "min_util_quantiles": {
+   "0.1": 0.2857142857142857,
+   "0.25": 0.38095238095238093,
+   "0.5": 0.6095238095238096,
+   "0.75": 0.7523809523809524,
+   "0.9": 0.8285714285714286
+  },
+  "share_min_util_below_0_6": 0.47692307692307695
+ },
+ "describe": {
+  "h2_event_days_with_sat": 23,
+  "h2_event_days": 26,
+  "h2_non_event_days_with_sat": 8,
+  "h2_non_event_days": 42,
+  "event_sat_minutes_quantiles": {
+   "0.25": 12.5,
+   "0.5": 20.0,
+   "0.75": 30.0,
+   "0.9": 45.0
+  },
+  "sat_bins_by_gate": {
+   "남2": 9,
+   "북2": 29,
+   "동2": 44
+  }
+ }
+}

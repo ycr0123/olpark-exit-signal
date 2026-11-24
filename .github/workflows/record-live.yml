@@ -1,0 +1,30 @@
+name: record-live
+# 기관 실시간 주차현황을 5분마다 받아 live 브랜치의 recent.json(최근 4시간)으로 남긴다.
+# 시연 페이지는 이 파일로 처음 연 사람에게도 30분 변화를 바로 보여 준다.
+# live 브랜치는 매번 커밋 하나로 덮어써 이력이 쌓이지 않는다.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: record-live
+  cancel-in-progress: false
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: record
+        run: |
+          if git fetch -q origin live 2>/dev/null; then git show FETCH_HEAD:recent.json > prev.json || echo '{"samples":[]}' > prev.json; else echo '{"samples":[]}' > prev.json; fi
+          python3 tools/record_recent.py prev.json recent.json
+      - name: publish
+        run: |
+          mkdir out && cp recent.json out/ && cd out
+          git init -q -b live
+          git add recent.json
+          git -c user.name=record-bot -c user.email=record-bot@users.noreply.github.com commit -qm "recent"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" live
