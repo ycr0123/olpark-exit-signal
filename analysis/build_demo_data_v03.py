@@ -33,7 +33,7 @@ SHOW_START = {  # 공식 공연 상세(evtSeq=5158) 확인값. 새 밤을 넣을
     },
 }
 LIVE_YELLOW = 400
-RECENT_URL = None
+RECENT_URL = "https://raw.githubusercontent.com/ycr0123/olpark-exit-signal/live/recent.json"  # 2026-11-24 11:48 KST actions run ok, CORS *
 
 live = pd.read_csv(Path(os.environ.get("OLPARK_LIVE_LOG", ROOT / "live_log" / "samples.csv")))
 live = live[live.status == "ok"].copy()
