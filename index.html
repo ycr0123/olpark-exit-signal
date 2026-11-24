@@ -208,11 +208,12 @@ a{color:var(--green)}
     list.forEach(function(s){if(!samples.some(function(x){return Math.abs(x.t-s.t)<60e3}))samples.push(s)});
     samples.sort(function(a,b){return a.t-b.t});
   }
-  function loadRecent(D){
-    if(!D.recent_url)return Promise.resolve();
+  // 최근 기록은 목록만 돌려준다. 합치기는 시간 제한 안에 왔고 회차가 같을 때 tick 이 한다.
+  function fetchRecent(D){
+    if(!D.recent_url)return Promise.resolve([]);
     return fetch(D.recent_url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
-      mergeSamples((j.samples||[]).map(function(s){return {t:Date.parse(s.kst+'+09:00'),v:num(s.v)}}).filter(function(s){return isFinite(s.t)&&isFinite(s.v)}));
-    }).catch(function(){});
+      return (j.samples||[]).map(function(s){return {t:Date.parse(s.kst+'+09:00'),v:num(s.v)}}).filter(function(s){return isFinite(s.t)&&isFinite(s.v)});
+    });
   }
   function clearSignal(){
     $('lamp').className='lamp';$('kChange').classList.remove('amber');
@@ -223,23 +224,34 @@ a{color:var(--green)}
     function tick(){
       var my=++seq;
       today(D,S);sched(S);
-      var rp=withTimeout(loadRecent(D),8000).catch(function(){});
-      var lp=withTimeout(fetch(D.live_api,{cache:'no-store'}),15000).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
-        var v=num(j&&j[0]&&j[0].parking_sum);if(!isFinite(v))throw 0;return v});
-      Promise.all([rp,lp]).then(function(a){
+      var got=null;
+      var rp=withTimeout(fetchRecent(D),8000).then(function(list){if(my===seq)mergeSamples(list)},function(){});
+      var lp=withTimeout(fetch(D.live_api,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+        var v=num(j&&j[0]&&j[0].parking_sum);if(!isFinite(v))throw 0;return v}),15000);
+      lp.then(function(v){
         if(my!==seq)return;
-        var v=a[1];
-        mergeSamples([{t:Date.now(),v:v}]);
+        got={t:Date.now(),v:v};
+        mergeSamples([got]);
         try{localStorage.setItem('olpark_samples',JSON.stringify(samples.slice(-60)))}catch(e){}
-        render(D,v);
-      }).catch(function(){if(my!==seq)return;$('nowCount').textContent='실시간 값을 받지 못함';$('nowSub').textContent='2025년 기록 안내만 보여 줍니다';clearSignal();advise(D,null)}).then(function(){if(my===seq)opsLive()});
+        showCount(v,got.t);
+      },function(){if(my!==seq)return;$('nowCount').textContent='실시간 값을 받지 못함';$('nowSub').textContent='2025년 기록 안내만 보여 줍니다';clearSignal();advise(D,null)});
+      Promise.all([rp,lp.then(null,function(){})]).then(function(){
+        if(my!==seq)return;
+        if(got)render(D,got.v,got.t);
+        opsLive();
+      });
     }
     tick();setInterval(tick,5*60e3);
   }
   // 30분 전 기준: 25~35분 전 기록 가운데 30분에 가장 가까운 것
   function base30(now){var b=null,best=1e18;for(var i=0;i<samples.length;i++){var age=now-samples[i].t;if(age<=35*60e3&&age>=25*60e3){var d=Math.abs(age-30*60e3);if(d<best){best=d;b=samples[i]}}}return b}
-  function render(D,v){
-    var now=Date.now();
+  // 현재 대수는 받은 즉시 보인다. 비교 카드는 최근 기록 처리 뒤 render 가 채운다.
+  function showCount(v,t){
+    $('nowCount').textContent=v.toLocaleString()+'대';
+    $('lamp').className='lamp';$('kChange').classList.remove('amber');
+    $('chg').textContent='-';$('chgLabel').textContent='30분 전 기록 확인 중';
+  }
+  function render(D,v,now){
     $('nowCount').textContent=v.toLocaleString()+'대';
     $('nowSub').textContent='지금 주차 중(기관 실시간 주차현황, 동2, 남2, 북2문 주차장 합계, '+new Date(now+9*3600e3).toISOString().slice(11,16)+' 기준)';
     var base=base30(now);
@@ -256,7 +268,7 @@ a{color:var(--green)}
   }
   function advise(D,yellow){
     var a=$('advice'),all=D.sat_rates.ALL,X=D.extras,V=D.v03,au=X.audience_split,p30=V.saturated_at_first_plus['30'],p60=V.saturated_at_first_plus['60'];
-    var hist='2025년 공연 날 밤 출구가 포화된 '+V.event_sat_nights+'밤을 보면, 처음 포화된 30분 뒤에도 포화였던 밤은 '+p30.saturated+'/'+p30.observable+'밤, 1시간 뒤는 '+p60.saturated+'/'+p60.observable+'밤이었습니다(분모는 그 시각이 23:50 전에 온 밤, 중간에 풀렸다가 다시 포화된 밤도 있음). 이 수치는 노란불이 켜진 때가 아니라 출구가 처음 포화된 때를 기준으로 센 것이라, 노란불 뒤 몇 분을 기다리라는 뜻은 아닙니다.';
+    var hist='2025년 공연 날 밤 출구가 포화된 '+V.event_sat_nights+'밤을 보면, 처음 포화된 30분 뒤에도 포화였던 밤은 '+p30.saturated+'/'+p30.observable+'밤, 1시간 뒤는 '+p60.saturated+'/'+p60.observable+'밤이었습니다(분모는 그 시각이 23:50 칸까지 든 밤, 중간에 풀렸다가 다시 포화된 밤도 있음). 이 수치는 노란불이 켜진 때가 아니라 출구가 처음 포화된 때를 기준으로 센 것이라, 노란불 뒤 몇 분을 기다리라는 뜻은 아닙니다.';
     if(yellow){a.className='advice';a.innerHTML='<b>지금 주차 차량이 한꺼번에 빠지고 있습니다.</b> '+hist+' 출발 시점은 위 30분 변화와 이 기록을 함께 보고 정하시면 됩니다.'}
     else if(showPeriod){a.className='advice';a.innerHTML='<b>오늘은 공연 기간입니다.</b> 2025년 공연 기록이 있던 밤의 '+pct(all.event.sat_days,all.event.days)+'에서 출구가 포화됐습니다(관람객이 많은 날 '+pct(au.ge_median.sat_days,au.ge_median.days)+', 적은 날 '+pct(au.lt_median.sat_days,au.lt_median.days)+'). 그날 실제 공연 여부와 시각은 위 공연 제목을 눌러 공연 상세에서 확인할 수 있습니다. '+hist}
     else{a.className='advice calm';a.innerHTML='기관 공연 일정 목록에 오늘 공연 기간인 공연이 없습니다. 2025년 공연 기록이 없는 밤의 출구 포화는 '+pct(all.non_event.sat_days,all.non_event.days)+'였습니다.'}

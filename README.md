@@ -28,6 +28,6 @@
 5) `python analysis/plan_facts_v03.py`: 기획서와 화면의 모든 수치를 `analysis/plan_facts_v03.json` 으로 냅니다. 실시간 기록 CSV 경로는 환경변수 `OLPARK_LIVE_LOG` 로 줍니다. 공개된 수치와 같은 값을 얻으려면 `OLPARK_LIVE_LOG=analysis/live_samples_20261124.csv` 로 주십시오(제출 때 쓴 837행).
 6) 공연 일정: 기관 공연 일정 목록(https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoListText?mid=a20301010200)을 내려받아 `python analysis/build_schedule_v03.py <저장한 html> schedule.json`.
 7) `python analysis/build_demo_data_v04.py .`: 루트의 `data.json`, `facts.json` 을 만듭니다(`schedule.json` 이 먼저 있어야 함).
-8) 화면 동작 시험: `python analysis/demo_tests_v05/test_demo_v05.py .`(30분 기준, 실패 뒤 표시 초기화, 빈 값 거부, 최근 기록 요청이 멈춰도 실시간 값 표시, 늦게 온 응답 무시, 날짜 넘김, 공연 상세 링크), `python analysis/demo_tests_v05/test_band_v05.py .`(다시 보기 노란 띠 시각). 하나라도 실패하면 종료코드 1 입니다. Playwright 가 필요합니다.
+8) 화면 동작 시험: `python analysis/demo_tests_v06/test_demo_v06.py .`(30분 기준, 실패 뒤 표시 초기화, 빈 값 거부, 최근 기록 요청이 멈춰도 실시간 값 표시, 늦게 온 응답 무시, 응답 본문이 멈추면 실패 표시, 기다린 시간이 30분 비교를 바꾸지 않음, 실시간 실패 뒤에도 최근 곡선 표시, 날짜 넘김, 공연 상세 링크), `python analysis/demo_tests_v06/test_band_v06.py .`(다시 보기 노란 띠 시각). 하나라도 실패하면 종료코드 1 입니다. Playwright 가 필요합니다.
 
 원자료(약 241만 건)는 용량 때문에 올리지 않았습니다. 위 1)로 다시 받을 수 있습니다.

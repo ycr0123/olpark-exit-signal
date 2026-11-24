@@ -1,8 +1,10 @@
-"""시연 5판 동작 시험. 4판 시험(코덱스 감사 1회차 상급 3, 4, 5)에 2회차 지적을 더했다:
+"""시연 6판 동작 시험. 5판 시험에 5판 좁힌 추가 검증 지적 4건(응답 본문 멈춤, 최근 기록 대기 시간이 판정을 바꿈,
+실시간 실패 뒤 최근 기록 곡선, 앞 회차 최근 기록 합치기)을 더했다. 6판 통과, 5판 실패가 기대다.
+(5판 설명) 시연 5판 동작 시험. 4판 시험(코덱스 감사 1회차 상급 3, 4, 5)에 2회차 지적을 더했다:
 상급 2(공백 문자열, false 를 0대로), 상급 3(최근 기록 요청이 멈추면 실시간 값도 안 나옴, 늦게 온 앞 회차 응답이 최신 값을 덮음),
 상급 4(운영자 탭 공연 목록의 날짜 넘김), 중급 6(25~35분 전 비교 기록이 없을 때 다른 시점 차이를 30분 변화로 표시).
 같은 시험을 4판에 걸어 결함이 잡히는지도 본다(양방향). 하나라도 실패하면 종료코드 1.
-사용: python test_demo_v05.py <demo 폴더>
+사용: python test_demo_v06.py <demo 폴더>
 """
 
 import json
@@ -89,7 +91,8 @@ def run(case, t0, recent, live_seq, steps, hook=None):
                 lamp:document.getElementById('lamp').className,advice:document.getElementById('advice').textContent,
                 show:document.getElementById('showToday').textContent,showLinks:document.querySelectorAll('#showSub a').length,
                 schedLinks:document.querySelectorAll('#schedTable a').length,
-                schedRows:Math.max(0,document.querySelectorAll('#schedTable tr').length-1)})"""
+                schedRows:Math.max(0,document.querySelectorAll('#schedTable tr').length-1),
+                opsSvg:document.querySelectorAll('#opsLive svg').length})"""
             )
         out["errors"] = errs
         b.close()
@@ -214,6 +217,79 @@ o = run(
     [0],
 )
 res["gap70_no_change"] = o[0]["chg"] == "-" and "분 전보다" not in o[0]["label"]
+
+# 5판 좁힌 검증 상급 1: 응답 헤더만 오고 본문이 멈추면 15초 뒤 실패로 표시하고 노란불을 지움
+BODYHANG = (
+    "(function(){var f=window.fetch,n=0;window.fetch=function(u,o){u=String(u);"
+    "if(u.indexOf(window.__LIVE)===0){n++;if(n===2)return Promise.resolve({ok:true,json:function(){return new Promise(function(){})}})}"
+    "return f.apply(this,arguments)}})();"
+)
+o = run(
+    "body_hang",
+    kst("2026-11-26T20:00:00"),
+    [{"kst": "2026-11-26T19:30:00", "v": 1500}],
+    [1000, 1000],
+    [0, 5 * 60 * 1000, 20 * 1000],
+    hook=BODYHANG,
+)
+res["body_hang_first_yellow"] = o[0]["kAmber"]
+res["body_hang_clears"] = (
+    "받지 못함" in o[2]["count"] and not o[2]["kAmber"] and "amber" not in o[2]["lamp"]
+)
+
+# 5판 좁힌 검증 상급 2: 최근 기록을 기다린 시간이 비교 표본의 나이를 바꾸지 않음(24분 56초 전 기록은 비교 대상이 아님)
+AGE = (
+    "(function(){try{localStorage.setItem('olpark_samples',JSON.stringify([{t:Date.parse('2026-11-26T19:35:04+09:00'),v:1500}]))}catch(e){}"
+    "var f=window.fetch;window.fetch=function(u,o){u=String(u);"
+    "if(window.__RECENT&&u.indexOf(window.__RECENT)===0)return new Promise(function(){});"
+    "return f.apply(this,arguments)}})();"
+)
+o = run("wait_age", kst("2026-11-26T20:00:00"), [], [1000], [0, 10 * 1000], hook=AGE)
+res["wait_age_no_yellow"] = (
+    o[1]["count"] == "1,000대" and not o[1]["kAmber"] and "amber" not in o[1]["lamp"]
+)
+
+# 5판 좁힌 검증 상급 3: 실시간이 먼저 실패해도 1초 뒤 받은 최근 기록으로 운영자 곡선을 그림
+FAILFIRST = (
+    "(function(){var f=window.fetch;window.fetch=function(u,o){u=String(u);var a=arguments,self=this;"
+    "if(u.indexOf(window.__LIVE)===0)return Promise.reject(new TypeError('x'));"
+    "if(window.__RECENT&&u.indexOf(window.__RECENT)===0)return new Promise(function(res){setTimeout(function(){res(f.apply(self,a))},1000)});"
+    "return f.apply(this,arguments)}})();"
+)
+o = run(
+    "fail_then_recent",
+    kst("2026-11-26T20:00:00"),
+    [
+        {"kst": "2026-11-26T19:50:00", "v": 1300},
+        {"kst": "2026-11-26T19:55:00", "v": 1250},
+    ],
+    [1000],
+    [0, 3 * 1000],
+    hook=FAILFIRST,
+)
+res["fail_then_recent_curve"] = "받지 못함" in o[1]["count"] and o[1]["opsSvg"] >= 1
+
+# 5판 좁힌 검증 중급 5: 시간 제한을 넘겨 늦게 온 앞 회차 최근 기록은 다음 회차 비교에 섞이지 않음
+LATEREC = (
+    "(function(){var f=window.fetch,n=0;window.fetch=function(u,o){u=String(u);"
+    "if(window.__RECENT&&u.indexOf(window.__RECENT)===0){n++;if(n===1)return new Promise(function(res){setTimeout(function(){"
+    "res(new Response(JSON.stringify({samples:[{kst:'2026-11-26T19:35:05',v:1500}]}),{status:200,headers:{'content-type':'application/json'}}))"
+    "},5*60000+2000)});return new Promise(function(){})}"
+    "return f.apply(this,arguments)}})();"
+)
+o = run(
+    "late_recent",
+    kst("2026-11-26T20:00:00"),
+    [],
+    [1000, 1000],
+    [
+        0,
+        5 * 60 * 1000 + 3 * 1000,
+        12 * 1000,
+    ],  # 둘째 회차는 최근 기록을 8초까지 기다린 뒤 그린다
+    hook=LATEREC,
+)
+res["late_recent_not_merged"] = not o[2]["kAmber"] and "amber" not in o[2]["lamp"]
 
 print(json.dumps(res, ensure_ascii=False))
 ok = all(res.values())
