@@ -28,11 +28,16 @@ else:
         print(f"BLOCK prev unreadable: {type(e).__name__}")
         sys.exit(3)
 now = datetime.now(KST)
-samples = [
-    s
-    for s in prev.get("samples", [])
-    if now - datetime.fromisoformat(s["kst"]).replace(tzinfo=KST) <= KEEP
-]
+try:
+    samples = [
+        s
+        for s in prev.get("samples", [])
+        if now - datetime.fromisoformat(s["kst"]).replace(tzinfo=KST) <= KEEP
+    ]
+except (KeyError, TypeError, ValueError) as e:
+    # 5판: 행 안의 kst 가 없거나 형식이 틀려도 다른 읽기 실패와 같이 종료코드 3 으로 멈춘다(코덱스 재감사 2/2 하급 9).
+    print(f"BLOCK prev row unreadable: {type(e).__name__}")
+    sys.exit(3)
 status = "ok"
 try:
     req = urllib.request.Request(

@@ -67,4 +67,6 @@ with sync_playwright() as p:
     b.close()
 fmt = lambda m: None if m is None else f"{(m // 60) % 24:02d}:{m % 60:02d}"  # noqa: E731
 print({d: (fmt(exp[d]), fmt(got[d])) for d in exp})
-print("BAND_PASS" if all(exp[d] == got[d] for d in exp) else "BAND_FAIL")
+ok = all(exp[d] == got[d] for d in exp)
+print("BAND_PASS" if ok else "BAND_FAIL")
+sys.exit(0 if ok else 1)

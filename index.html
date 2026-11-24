@@ -124,9 +124,9 @@ a{color:var(--green)}
     <p class="note" id="spanNote"></p>
   </div>
   <div class="card">
-    <h2>결과 보기 전에 통과선을 정하고 시험한 기능</h2>
+    <h2>통과선을 정하고 하반기로 시험한 기능</h2>
     <table id="testTable" class="tbl-wide"></table>
-    <p class="note">상반기에서 규칙을 정하고 하반기 결함 없는 날로 맞혀 봤습니다. 통과선은 시험 스크립트 맨 위에 적어 실행 전에 커밋했습니다. 다만 시험 순서는 깨끗하지 않았습니다. 앞 네 시험은 원본 결함을 빼기 전에 한 번 돌린 뒤 결함 없는 날로 다시 돌렸고, 출구 추천 시험은 하반기 출구 여유 요약을 이미 본 뒤에 만들었습니다. 통과하지 못한 기능은 화면에서 뺐습니다. 고정 예보는 학습 기간의 중앙값을 매일 똑같이 말하는 예보입니다.</p>
+    <p class="note">상반기에서 규칙을 정하고 하반기 결함 없는 날로 맞혀 봤습니다. 통과선은 시험 스크립트 맨 위에 적어 실행 전에 커밋했습니다(출구 추천은 아래처럼 사후 시험). 다만 시험 순서는 깨끗하지 않았습니다. 앞 네 시험은 원본 결함을 빼기 전에 한 번 돌린 뒤 결함 없는 날로 다시 돌렸고, 출구 추천 시험은 하반기 출구 여유 요약을 이미 본 뒤에 만들었습니다. 통과하지 못한 기능은 화면에서 뺐습니다. 고정 예보는 학습 기간의 중앙값을 매일 똑같이 말하는 예보입니다.</p>
   </div>
 </section>
 
@@ -198,7 +198,8 @@ a{color:var(--green)}
     if(showPeriod){$('showToday').textContent=ev.length+'건';$('showSub').innerHTML='오늘이 공연 기간인 공연(제목을 누르면 공연 상세의 요일과 시각)<br>'+ev.map(function(e){return esc(e.venue)+', '+link(e)}).join('<br>')}
     else{$('showToday').textContent='없음';$('showSub').textContent='기관 공연 일정 목록에 오늘 공연 기간인 공연 없음'}
   }
-  function num(x){if(x===null||x===undefined||x==='')return NaN;var v=+x;return isFinite(v)&&v>=0?v:NaN}
+  function num(x){if(typeof x==='number')return isFinite(x)&&x>=0?x:NaN;if(typeof x==='string'&&/^\s*\d+(\.\d+)?\s*$/.test(x))return +x;return NaN}
+  function withTimeout(pr,ms){return new Promise(function(res,rej){var tm=setTimeout(function(){rej(0)},ms);pr.then(function(x){clearTimeout(tm);res(x)},function(e){clearTimeout(tm);rej(e)})})}
 
   // 최근 기록: 공개 저장소 자동 작업이 남긴 파일(있으면) + 이 브라우저가 연 뒤 받은 값
   var samples=[];
@@ -218,14 +219,20 @@ a{color:var(--green)}
     $('chg').textContent='-';$('chgLabel').textContent='30분 변화(실시간 값이 없어 표시하지 않음)';
   }
   function live(D,S){
+    var seq=0;
     function tick(){
-      today(D,S);
-      loadRecent(D).then(function(){return fetch(D.live_api,{cache:'no-store'})}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
-        var v=num(j&&j[0]&&j[0].parking_sum);if(!isFinite(v))throw 0;
+      var my=++seq;
+      today(D,S);sched(S);
+      var rp=withTimeout(loadRecent(D),8000).catch(function(){});
+      var lp=withTimeout(fetch(D.live_api,{cache:'no-store'}),15000).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+        var v=num(j&&j[0]&&j[0].parking_sum);if(!isFinite(v))throw 0;return v});
+      Promise.all([rp,lp]).then(function(a){
+        if(my!==seq)return;
+        var v=a[1];
         mergeSamples([{t:Date.now(),v:v}]);
         try{localStorage.setItem('olpark_samples',JSON.stringify(samples.slice(-60)))}catch(e){}
         render(D,v);
-      }).catch(function(){$('nowCount').textContent='실시간 값을 받지 못함';$('nowSub').textContent='2025년 기록 안내만 보여 줍니다';clearSignal();advise(D,null)}).then(function(){opsLive()});
+      }).catch(function(){if(my!==seq)return;$('nowCount').textContent='실시간 값을 받지 못함';$('nowSub').textContent='2025년 기록 안내만 보여 줍니다';clearSignal();advise(D,null)}).then(function(){if(my===seq)opsLive()});
     }
     tick();setInterval(tick,5*60e3);
   }
@@ -238,7 +245,10 @@ a{color:var(--green)}
     var base=base30(now);
     var drop30=null;
     if(base){drop30=base.v-v;var bm=Math.round((now-base.t)/60e3);$('chg').textContent=(drop30>=0?'-':'+')+Math.abs(drop30).toLocaleString()+'대';$('chgLabel').textContent=(bm===30?'30분 전보다':'30분 전('+bm+'분 전 기록)보다')+(drop30>=D.live_yellow_drop30?' (노란불)':' (큰 감소 없음)')}
-    else{var first=samples[0];if(first&&now-first.t>=4*60e3){var d=first.v-v;$('chg').textContent=(d>=0?'-':'+')+Math.abs(d)+'대';$('chgLabel').textContent=Math.round((now-first.t)/60e3)+'분 전보다 (30분 변화는 기록이 30분 쌓이면 표시)'}else{$('chg').textContent='-';$('chgLabel').textContent='30분 변화는 기록이 30분 쌓이면 표시'}}
+    else{var first=samples[0],age=first?(now-first.t)/60e3:0;
+      if(first&&age<25&&age>=4){var d=first.v-v;$('chg').textContent=(d>=0?'-':'+')+Math.abs(d).toLocaleString()+'대';$('chgLabel').textContent=Math.round(age)+'분 전보다 (30분 변화는 기록이 30분 쌓이면 표시)'}
+      else if(first&&age>=25){$('chg').textContent='-';$('chgLabel').textContent='25~35분 전 비교 기록이 없어 30분 변화를 표시하지 않음'}
+      else{$('chg').textContent='-';$('chgLabel').textContent='30분 변화는 기록이 30분 쌓이면 표시'}}
     var yellow=drop30!==null&&drop30>=D.live_yellow_drop30;
     $('lamp').className='lamp'+(yellow?' amber':'');
     $('kChange').classList.toggle('amber',yellow);
@@ -246,7 +256,7 @@ a{color:var(--green)}
   }
   function advise(D,yellow){
     var a=$('advice'),all=D.sat_rates.ALL,X=D.extras,V=D.v03,au=X.audience_split,p30=V.saturated_at_first_plus['30'],p60=V.saturated_at_first_plus['60'];
-    var hist='2025년 공연 날 밤 출구가 포화된 '+V.event_sat_nights+'밤을 보면, 처음 포화된 30분 뒤에도 포화였던 밤은 '+p30.saturated+'/'+p30.observable+'밤, 1시간 뒤는 '+p60.saturated+'/'+p60.observable+'밤이었습니다. 이 수치는 노란불이 켜진 때가 아니라 출구가 처음 포화된 때를 기준으로 센 것이라, 노란불 뒤 몇 분을 기다리라는 뜻은 아닙니다.';
+    var hist='2025년 공연 날 밤 출구가 포화된 '+V.event_sat_nights+'밤을 보면, 처음 포화된 30분 뒤에도 포화였던 밤은 '+p30.saturated+'/'+p30.observable+'밤, 1시간 뒤는 '+p60.saturated+'/'+p60.observable+'밤이었습니다(분모는 그 시각이 23:50 전에 온 밤, 중간에 풀렸다가 다시 포화된 밤도 있음). 이 수치는 노란불이 켜진 때가 아니라 출구가 처음 포화된 때를 기준으로 센 것이라, 노란불 뒤 몇 분을 기다리라는 뜻은 아닙니다.';
     if(yellow){a.className='advice';a.innerHTML='<b>지금 주차 차량이 한꺼번에 빠지고 있습니다.</b> '+hist+' 출발 시점은 위 30분 변화와 이 기록을 함께 보고 정하시면 됩니다.'}
     else if(showPeriod){a.className='advice';a.innerHTML='<b>오늘은 공연 기간입니다.</b> 2025년 공연 기록이 있던 밤의 '+pct(all.event.sat_days,all.event.days)+'에서 출구가 포화됐습니다(관람객이 많은 날 '+pct(au.ge_median.sat_days,au.ge_median.days)+', 적은 날 '+pct(au.lt_median.sat_days,au.lt_median.days)+'). 그날 실제 공연 여부와 시각은 위 공연 제목을 눌러 공연 상세에서 확인할 수 있습니다. '+hist}
     else{a.className='advice calm';a.innerHTML='기관 공연 일정 목록에 오늘 공연 기간인 공연이 없습니다. 2025년 공연 기록이 없는 밤의 출구 포화는 '+pct(all.non_event.sat_days,all.non_event.days)+'였습니다.'}
@@ -313,10 +323,13 @@ a{color:var(--green)}
       ['포화 때 돌아갈 출구 추천','추천 출구가 여유(이용률 0.6 미만) '+V.gate_rule_counts.hit+'/'+V.gate_rule_counts.n+'칸('+Math.round(T.gate_rule.hit_rate_alt_below_0_6*100)+'%, 통과선 60%, 무작위로 고르면 약 '+Math.round(V.gate_rule_counts.random_expected)+'칸). 추천 출구가 포화 출구보다 한산 '+V.gate_rule_counts.alt_lower+'/'+V.gate_rule_counts.n+'칸(통과선 80%, 통과)','두 조건을 모두 넘어야 통과라 탈락했습니다. 이 시험은 하반기 출구 여유 요약을 이미 본 뒤에 만들었습니다.']];
     $('testTable').innerHTML='<tr><th>기능</th><th>하반기 결과</th><th>알게 된 것</th><th>반영</th></tr>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td><span class="tag no">넣지 않음</span></td></tr>'}).join('');
   }
-  function ops(D,S){
+  function sched(S){
     var ds=todayStr(),up=S.events.filter(function(e){return e.end>=ds}).sort(function(a,b){return a.start<b.start?-1:1});
     $('schedTable').innerHTML='<tr><th>기간</th><th>공연장</th><th>공연(공연 상세)</th></tr>'+up.map(function(e){return '<tr><td>'+e.start.slice(5)+' ~ '+e.end.slice(5)+'</td><td>'+esc(e.venue)+'</td><td>'+link(e)+'</td></tr>'}).join('');
     $('schedSrc').innerHTML='출처: <a href="'+S.source+'" target="_blank" rel="noopener">기관 누리집 공연 일정</a>('+S.fetched_kst.slice(0,10)+' 받음). 기간 안의 실제 공연 요일과 시각은 공연 제목을 누르면 나오는 공연 상세에 있습니다.';
+  }
+  function ops(D,S){
+    sched(S);
     var bins={};D.first_sat_list.forEach(function(t){var k=Math.floor(hm2m(t)/30)*30;bins[k]=(bins[k]||0)+1});
     var its=[];for(var k=18*60;k<24*60;k+=30){var h=Math.floor(k/60),mm=k%60;its.push({label:h+':'+(mm?'30':'00')+' ~ '+(mm?(h+1)+':00':h+':30'),v:bins[k]||0,c:C.amber,text:(bins[k]||0)+'밤'})}
     $('firstChart').innerHTML=bars(its,Math.max.apply(null,its.map(function(i){return i.v})));

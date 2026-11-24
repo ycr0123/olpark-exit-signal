@@ -15,7 +15,8 @@
 | data.json, facts.json | 2025 입출차 재집계와 시험 결과(analysis/build_demo_data_v04.py 가 생성) |
 | schedule.json | 기관 누리집 공연 일정 목록에서 읽은 공연 기간과 공연 상세 주소(analysis/build_schedule_v03.py 가 생성) |
 | tools/record_recent.py | 실시간 값을 받아 최근 4시간 기록을 갱신 |
-| analysis/ | 수집, 결함 점검, 재집계, 사전 등록 시험, 수치 산출, 화면 동작 시험 스크립트와 그 결과 |
+| analysis/ | 수집, 결함 점검, 재집계, 통과선을 먼저 적은 시험(출구 추천만 하반기 요약을 본 뒤 만든 사후 시험), 수치 산출, 화면 동작 시험 스크립트와 그 결과 |
+| analysis/live_samples_20261124.csv | 공개 수치와 다시 보기에 쓴 실시간 기록(2026-11-21 15:09:15 ~ 11-24 12:45:16, 837행, 기관 실시간 주차현황 합계) |
 
 ## 다시 만들기(저장소 루트에서)
 
@@ -24,9 +25,9 @@
 2) `python analysis/build_trips_cache_v01.py`, `python analysis/coverage_v01.py`: 차량 한 대를 한 행으로 묶고, 날짜별 건수로 잘린 날(65,535건 안팎에서 끊긴 달, 매달 마지막 날 0건)을 찾습니다.
 3) `python analysis/kcisa675_events_v01.py`: 연계 데이터에서 공연 기록이 있는 날과 관람객 기재값을 뽑습니다.
 4) `exit_after_show_v03.py`, `verify_h2_v02.py`, `verify_gate_v01.py`: 상반기에서 정한 규칙을 하반기 결함 없는 날로 시험합니다. 통과선은 각 스크립트 맨 위에 있습니다.
-5) `python analysis/plan_facts_v03.py`: 기획서와 화면의 모든 수치를 `analysis/plan_facts_v03.json` 으로 냅니다. 실시간 기록 CSV 경로는 환경변수 `OLPARK_LIVE_LOG` 로 줍니다.
+5) `python analysis/plan_facts_v03.py`: 기획서와 화면의 모든 수치를 `analysis/plan_facts_v03.json` 으로 냅니다. 실시간 기록 CSV 경로는 환경변수 `OLPARK_LIVE_LOG` 로 줍니다. 공개된 수치와 같은 값을 얻으려면 `OLPARK_LIVE_LOG=analysis/live_samples_20261124.csv` 로 주십시오(제출 때 쓴 837행).
 6) 공연 일정: 기관 공연 일정 목록(https://www.ksponco.or.kr/olympicpark/eventInfo/eventInfoListText?mid=a20301010200)을 내려받아 `python analysis/build_schedule_v03.py <저장한 html> schedule.json`.
 7) `python analysis/build_demo_data_v04.py .`: 루트의 `data.json`, `facts.json` 을 만듭니다(`schedule.json` 이 먼저 있어야 함).
-8) 화면 동작 시험: `python analysis/demo_tests_v04/test_demo_v04.py .`(30분 기준, 실패 뒤 표시 초기화, 빈 값 거부, 날짜 넘김, 공연 상세 링크), `python analysis/demo_tests_v04/test_band_v04.py .`(다시 보기 노란 띠 시각). Playwright 가 필요합니다.
+8) 화면 동작 시험: `python analysis/demo_tests_v05/test_demo_v05.py .`(30분 기준, 실패 뒤 표시 초기화, 빈 값 거부, 최근 기록 요청이 멈춰도 실시간 값 표시, 늦게 온 응답 무시, 날짜 넘김, 공연 상세 링크), `python analysis/demo_tests_v05/test_band_v05.py .`(다시 보기 노란 띠 시각). 하나라도 실패하면 종료코드 1 입니다. Playwright 가 필요합니다.
 
 원자료(약 241만 건)는 용량 때문에 올리지 않았습니다. 위 1)로 다시 받을 수 있습니다.
